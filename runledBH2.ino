@@ -1,12 +1,12 @@
 #define BLYNK_PRINT Serial
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
+#define BLYNK_TIMEOUT_MS  750  // must be BEFORE BlynkSimpleEsp8266.h doesn't work !!!
+#define BLYNK_HEARTBEAT   17   // must be BEFORE BlynkSimpleEsp8266.h works OK as 17s
 #include <BlynkSimpleEsp8266.h>
 #include <SimpleTimer.h>
 #include <Wire.h>
 
-#define BLYNK_TIMEOUT_MS  750  // must be BEFORE BlynkSimpleEsp8266.h doesn't work !!!
-#define BLYNK_HEARTBEAT   17   // must be BEFORE BlynkSimpleEsp8266.h works OK as 17s
 #define BLYNK_PRINT Serial    
 
 #define LED_PIN     14
