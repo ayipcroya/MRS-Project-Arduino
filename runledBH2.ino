@@ -9,14 +9,14 @@
 
 #define BLYNK_PRINT Serial    
 
-#define LED_PIN     14
+#define LED_PIN     12
 #define NUM_LEDS    36
 #define BRIGHTNESS  100
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define LED_PIN2     12
+#define LED_PIN2     13
 #define NUM_LEDS2    36
 #define BRIGHTNESS2  100
 #define LED_TYPE2    WS2811
@@ -70,15 +70,15 @@ const unsigned long EventInterval = 1000;
 unsigned long previouTime2 = 0;
 const unsigned long EventInterval2 = 500;
 unsigned long previouTime3 = 0;
-const unsigned long EventInterval3 = 1000;
+const unsigned long EventInterval3 = 10000;
 unsigned long previouTime4 = 0;
-const unsigned long EventInterval4 = 1010;
+const unsigned long EventInterval4 = 11000;
 unsigned long previouTime5 = 0;
 const unsigned long EventInterval5 = 120000;
 unsigned long previouTime6 = 0;
-const unsigned long EventInterval6 = 8000;
+const unsigned long EventInterval6 = 18000;
 unsigned long previouTime7 = 0;
-const unsigned long EventInterval7 = 9000;
+const unsigned long EventInterval7 = 19000;
 
 
 
@@ -176,18 +176,20 @@ void loop()
   }
     
     unsigned long currentMillis = millis();
+    leds[0].g = terang; 
+    leds2[0].r = terang;
+    FastLED.show();
 
     if (currentMillis - previouTime >= 10)
     {
     
-    leds[0].g = terang; 
-    leds2[0].r = terang;
+    
     static uint8_t startIndex = 1;
     startIndex = startIndex +1; /* motion speed */
     
     FillLEDsFromPaletteColors( startIndex);
     FillLEDsFromPaletteColors2( startIndex);
-    FastLED.show();
+    
     previouTime = currentMillis; 
     }
 
