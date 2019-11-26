@@ -9,14 +9,14 @@
 
 #define BLYNK_PRINT Serial    
 
-#define LED_PIN     12
+#define LED_PIN     14
 #define NUM_LEDS    36
 #define BRIGHTNESS  100
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define LED_PIN2     13
+#define LED_PIN2     12
 #define NUM_LEDS2    36
 #define BRIGHTNESS2  100
 #define LED_TYPE2    WS2811
