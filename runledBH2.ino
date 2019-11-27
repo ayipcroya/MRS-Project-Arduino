@@ -176,8 +176,8 @@ void loop()
   }
     
     unsigned long currentMillis = millis();
-    leds[0].g = terang; 
-    leds2[0].r = terang;
+    leds[0].r = terang; 
+    leds2[0].r = terang2;
     FastLED.show();
 
     if (currentMillis - previouTime >= 10)
