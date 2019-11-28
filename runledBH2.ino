@@ -1,10 +1,7 @@
 #define BLYNK_PRINT Serial
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
-#define BLYNK_TIMEOUT_MS  750  // must be BEFORE BlynkSimpleEsp8266.h doesn't work !!!
-#define BLYNK_HEARTBEAT   17   // must be BEFORE BlynkSimpleEsp8266.h works OK as 17s
 #include <BlynkSimpleEsp8266.h>
-#include <SimpleTimer.h>
 #include <Wire.h>
 
 #define BLYNK_PRINT Serial    
@@ -70,15 +67,15 @@ const unsigned long EventInterval = 1000;
 unsigned long previouTime2 = 0;
 const unsigned long EventInterval2 = 500;
 unsigned long previouTime3 = 0;
-const unsigned long EventInterval3 = 10000;
+const unsigned long EventInterval3 = 15000;
 unsigned long previouTime4 = 0;
-const unsigned long EventInterval4 = 11000;
+const unsigned long EventInterval4 = 16000;
 unsigned long previouTime5 = 0;
 const unsigned long EventInterval5 = 120000;
 unsigned long previouTime6 = 0;
-const unsigned long EventInterval6 = 18000;
+const unsigned long EventInterval6 = 17000;
 unsigned long previouTime7 = 0;
-const unsigned long EventInterval7 = 19000;
+const unsigned long EventInterval7 = 18000;
 
 
 
@@ -88,9 +85,7 @@ const unsigned long EventInterval7 = 19000;
 
 void setup() {
     Serial.begin(115200);
-    Blynk.connectWiFi(ssid, pass);
-    Blynk.config(auth, server, port);
-    Blynk.connect();    
+    Blynk.begin(auth, ssid, pass);    
     Wire.begin(D1,D2);
     
     delay( 3000 ); // power-up safety delay
@@ -114,15 +109,6 @@ BLYNK_WRITE(V6)// set Setpoint to V7 of blynk.
   terang2 = param.asInt();
 }
 
-void CheckConnection(){    // check every 11s if connected to Blynk server
-  if(!Blynk.connected()){
-    Serial.println("Not connected to Blynk server"); 
-    Blynk.connect();  // try to connect to server with default timeout
-  }
-  else{
-    Serial.println("Connected to Blynk server");     
-  }
-}
 
 void init_BH1750(int ADDRESS, int MODE){
   //BH1750 Initializing & Reset
@@ -171,16 +157,14 @@ void SetupBlackAndWhiteStripedPalette()
 void loop()
 {
     
-   if(Blynk.connected()){
+   
     Blynk.run();
-  }
+  
     
     unsigned long currentMillis = millis();
-    leds[0].r = terang; 
-    leds2[0].r = terang2;
     FastLED.show();
 
-    if (currentMillis - previouTime >= 10)
+    if (currentMillis - previouTime >= 13)
     {
     
     
@@ -189,6 +173,8 @@ void loop()
     
     FillLEDsFromPaletteColors( startIndex);
     FillLEDsFromPaletteColors2( startIndex);
+    leds[0].r = terang; 
+    leds2[0].r = terang2;
     
     previouTime = currentMillis; 
     }
@@ -214,38 +200,28 @@ void loop()
     }
     if (currentMillis - previouTime3 >= EventInterval3)
     {
-    previouTime3 = currentMillis;
-    Blynk.virtualWrite(4, SensorValue[0]);
     
+    Blynk.virtualWrite(4, SensorValue[0]);
+    previouTime3 = currentMillis;
    
            
     }
     if (currentMillis - previouTime4 >= EventInterval4)
     {
-    previouTime4 = currentMillis;
+    
     Blynk.virtualWrite(5, SensorValue[1]);
-      
+    previouTime4 = currentMillis;  
     }
-   if (currentMillis - previouTime5 >= EventInterval5)
-    {
-      previouTime5 = currentMillis;
-    CheckConnection();
-      
-    }
+   
     if (currentMillis - previouTime6 >= EventInterval6)
     {
-    previouTime6 = currentMillis;
-    Blynk.virtualWrite(3, SensorValue[0]);
     
-   
-           
+    Blynk.virtualWrite(3, SensorValue[0]);
+    previouTime6 = currentMillis;       
     }
     if (currentMillis - previouTime7 >= EventInterval7)
     {
-    previouTime7 = currentMillis;
     Blynk.virtualWrite(2, SensorValue[0]);
-    
-   
-           
+    previouTime7 = currentMillis;      
     }
 }
