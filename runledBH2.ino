@@ -1,19 +1,28 @@
-#define BLYNK_PRINT Serial
+
 #include <FastLED.h>
 #include <ESP8266WiFi.h>
+#define BLYNK_TIMEOUT_MS  750  // must be BEFORE BlynkSimpleEsp8266.h doesn't work !!!
+#define BLYNK_HEARTBEAT   30   // must be BEFORE BlynkSimpleEsp8266.h works OK as 17s
 #include <BlynkSimpleEsp8266.h>
+#include <SimpleTimer.h>
 #include <Wire.h>
+#include <PID_v1.h>
+#include <Servo.h>
+#include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
+SSD1306  display(0x3c, 5, 4); // Initialize the OLED display using Wire library
+
+
 
 #define BLYNK_PRINT Serial    
-
-#define LED_PIN     14
+#define FASTLED_ESP8266_NODEMCU_PIN_ORDER
+#define LED_PIN     5
 #define NUM_LEDS    36
 #define BRIGHTNESS  100
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define LED_PIN2     12
+#define LED_PIN2     6
 #define NUM_LEDS2    36
 #define BRIGHTNESS2  100
 #define LED_TYPE2    WS2811
@@ -48,55 +57,44 @@ char pass[] = "12345678";
 char server[]          = "blynk-cloud.com";
 unsigned int port      = 80;
 
-
-
 CRGBPalette16 currentPalette;
-
-
-
 int terang = 255;
 int terang2 = 255;
-
-
 
 // Definition of Variable
 int16_t RawData;
 int16_t SensorValue[2];
-unsigned long previouTime = 0;
-const unsigned long EventInterval = 1000;
-unsigned long previouTime2 = 0;
-const unsigned long EventInterval2 = 500;
-unsigned long previouTime3 = 0;
-const unsigned long EventInterval3 = 15000;
-unsigned long previouTime4 = 0;
-const unsigned long EventInterval4 = 16000;
-unsigned long previouTime5 = 0;
-const unsigned long EventInterval5 = 120000;
-unsigned long previouTime6 = 0;
-const unsigned long EventInterval6 = 17000;
-unsigned long previouTime7 = 0;
-const unsigned long EventInterval7 = 18000;
 
-
-
-
-
-
-
+double Setpoint = 7000, Input, Output;
+double Setpoint2 = 100 , Input2, Output2;
+PID myPID(&Input, &Output, &Setpoint ,1.2,0.9,1, DIRECT);
+PID myPID2(&Input2, &Output2, &Setpoint2 ,1.2,0.9,1, DIRECT);
+Servo servo;
+Servo servo2;
+BlynkTimer timer;
 void setup() {
     Serial.begin(115200);
-    Blynk.begin(auth, ssid, pass);    
+    Blynk.connectWiFi(ssid, pass);
+    Blynk.config(auth, server, port);
+    Blynk.connect();    
     Wire.begin(D1,D2);
-    
     delay( 3000 ); // power-up safety delay
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
     FastLED.addLeds<LED_TYPE2, LED_PIN2, COLOR_ORDER>(leds2, NUM_LEDS2).setCorrection( TypicalLEDStrip );
-    FastLED.setBrightness(  BRIGHTNESS2 );
-    
+    FastLED.setBrightness(  BRIGHTNESS2 );    
     SetupBlackAndWhiteStripedPalette();
+    timer.setInterval(13L, LED);
+    timer.setInterval(500L, sensor);
+    timer.setInterval(10000L, v1);
+    timer.setInterval(30000L, check);
+    myPID.SetMode(AUTOMATIC);
+    myPID2.SetMode(AUTOMATIC);
+    display.init(); // Initialising the UI will init the display too.
+    display.flipScreenVertically();
+
     
-    
+   
     
 }
 
@@ -109,6 +107,30 @@ BLYNK_WRITE(V6)// set Setpoint to V7 of blynk.
   terang2 = param.asInt();
 }
 
+void drawlux()
+{
+  int x=0;
+  int y=0;
+
+  int lux = SensorValue[0] ;
+  lux = map (lux,0,10000,0,100);
+
+  display.setFont(ArialMT_Plain_24);
+  String hum = String(lux) + " PSIG";
+  display.drawString(0 + x, 15 + y, hum);
+  int humWidth = display.getStringWidth(hum);
+}
+
+
+void CheckConnection(){    // check every 11s if connected to Blynk server
+  if(!Blynk.connected()){
+    Serial.println("Not connected to Blynk server"); 
+    Blynk.connect();  // try to connect to server with default timeout
+  }
+  else{
+    Serial.println("Connected to Blynk server");     
+  }
+}
 
 void init_BH1750(int ADDRESS, int MODE){
   //BH1750 Initializing & Reset
@@ -154,74 +176,54 @@ void SetupBlackAndWhiteStripedPalette()
     currentPalette[12] = CRGB::Red;
     
 }
-void loop()
-{
-    
-   
-    Blynk.run();
-  
-    
-    unsigned long currentMillis = millis();
-    FastLED.show();
 
-    if (currentMillis - previouTime >= 13)
-    {
-    
-    
+void LED()
+{
+leds[0].g = terang; 
+    leds2[0].r = terang2;
     static uint8_t startIndex = 1;
     startIndex = startIndex +1; /* motion speed */
-    
     FillLEDsFromPaletteColors( startIndex);
     FillLEDsFromPaletteColors2( startIndex);
-    leds[0].r = terang; 
-    leds2[0].r = terang2;
+    FastLED.show();
+    myPID.Compute();
+    myPID2.Compute();
     
-    previouTime = currentMillis; 
-    }
-
-    
-    if (currentMillis - previouTime2 >= EventInterval2)
-    {
-    previouTime2 = currentMillis;
-    init_BH1750(BH1750_1_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
+}
+void sensor ()
+{
+  init_BH1750(BH1750_1_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_1_ADDRESS);
     SensorValue[0] = RawData / 1.2;  
     init_BH1750(BH1750_2_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_2_ADDRESS);
     SensorValue[1] = RawData / 1.2;
-  // You can send any value at any time.
-  // Please don't send more that 10 values per second.
-   //Read the Temp and Humidity from DHT
-    Serial.print("Sensor_1 = "); Serial.print(SensorValue[0]);
-    Serial.print(" | Sensor_2 = "); Serial.println(SensorValue[1]);
+    Input = SensorValue[0];
+    Input2 = SensorValue[1];
+    display.clear();
+    drawlux();
+    display.display();
+
+}
+
+
+void v1()
+{
+  Blynk.virtualWrite(4, SensorValue[0]);
+  Blynk.virtualWrite(5, SensorValue[1]);
+  Blynk.virtualWrite(3, Output);
+  Blynk.virtualWrite(2, Output2);
+  }
+void check (){
+  CheckConnection();
   
+}
+void loop()
+{
     
-     
-    }
-    if (currentMillis - previouTime3 >= EventInterval3)
-    {
-    
-    Blynk.virtualWrite(4, SensorValue[0]);
-    previouTime3 = currentMillis;
-   
-           
-    }
-    if (currentMillis - previouTime4 >= EventInterval4)
-    {
-    
-    Blynk.virtualWrite(5, SensorValue[1]);
-    previouTime4 = currentMillis;  
-    }
-   
-    if (currentMillis - previouTime6 >= EventInterval6)
-    {
-    
-    Blynk.virtualWrite(3, SensorValue[0]);
-    previouTime6 = currentMillis;       
-    }
-    if (currentMillis - previouTime7 >= EventInterval7)
-    {
-    Blynk.virtualWrite(2, SensorValue[0]);
-    previouTime7 = currentMillis;      
-    }
+   if(Blynk.connected()){
+    Blynk.run();
+  }
+  timer.run();
+      
 }
