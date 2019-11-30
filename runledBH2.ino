@@ -58,15 +58,18 @@ char server[]          = "blynk-cloud.com";
 unsigned int port      = 80;
 
 CRGBPalette16 currentPalette;
-int terang = 255;
-int terang2 = 255;
+double terang = 100 ;
+double terang2 = 100 ;
+double sum;
+double xsum;
+
 
 // Definition of Variable
 int16_t RawData;
 int16_t SensorValue[2];
 
-double Setpoint = 7000, Input, Output;
-double Setpoint2 = 100 , Input2, Output2;
+double Setpoint , Input, Output;
+double Setpoint2 , Input2, Output2;
 PID myPID(&Input, &Output, &Setpoint ,1.2,0.9,1, DIRECT);
 PID myPID2(&Input2, &Output2, &Setpoint2 ,1.2,0.9,1, DIRECT);
 Servo servo;
@@ -92,7 +95,7 @@ void setup() {
     myPID2.SetMode(AUTOMATIC);
     display.init(); // Initialising the UI will init the display too.
     display.flipScreenVertically();
-
+    
     
    
     
@@ -100,11 +103,11 @@ void setup() {
 
 BLYNK_WRITE(V7)// set Setpoint to V7 of blynk.
 {
-  terang = param.asInt();
+  terang = param.asDouble();
 }
 BLYNK_WRITE(V6)// set Setpoint to V7 of blynk.
 {
-  terang2 = param.asInt();
+  terang2 = param.asDouble();
 }
 
 void drawlux()
@@ -147,7 +150,7 @@ void RawData_BH1750(int ADDRESS){
 }
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
 {
-    uint8_t brightness = terang;
+    uint8_t brightness = xsum;
     
     for( int i = 1; i < NUM_LEDS; i++) {
         leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness );
@@ -156,7 +159,7 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
 }
 void FillLEDsFromPaletteColors2( uint8_t colorIndex)
 {
-    uint8_t brightness = terang2;
+    uint8_t brightness = xsum;
     
     for( int i = 1; i < NUM_LEDS2; i++) {
         leds2[i] = ColorFromPalette( currentPalette, colorIndex, brightness );
@@ -179,8 +182,8 @@ void SetupBlackAndWhiteStripedPalette()
 
 void LED()
 {
-leds[0].g = terang; 
-    leds2[0].r = terang2;
+    leds[0].g =xsum; 
+    leds2[0].g =xsum;
     static uint8_t startIndex = 1;
     startIndex = startIndex +1; /* motion speed */
     FillLEDsFromPaletteColors( startIndex);
@@ -188,21 +191,27 @@ leds[0].g = terang;
     FastLED.show();
     myPID.Compute();
     myPID2.Compute();
+    sum = Output + Output2;
+    xsum = constrain(sum,0,255);
     
 }
 void sensor ()
 {
   init_BH1750(BH1750_1_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_1_ADDRESS);
-    SensorValue[0] = RawData / 1.2;  
+    SensorValue[0] = RawData / 120;  
     init_BH1750(BH1750_2_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_2_ADDRESS);
-    SensorValue[1] = RawData / 1.2;
+    SensorValue[1] = RawData / 120;
     Input = SensorValue[0];
     Input2 = SensorValue[1];
     display.clear();
     drawlux();
     display.display();
+    Setpoint = terang;
+    Setpoint2 = terang2;
+
+    
 
 }
 
@@ -213,6 +222,7 @@ void v1()
   Blynk.virtualWrite(5, SensorValue[1]);
   Blynk.virtualWrite(3, Output);
   Blynk.virtualWrite(2, Output2);
+  Blynk.virtualWrite(1, xsum);
   }
 void check (){
   CheckConnection();
