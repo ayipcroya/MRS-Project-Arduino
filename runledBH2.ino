@@ -15,14 +15,14 @@ SSD1306  display(0x3c, 5, 4); // Initialize the OLED display using Wire library
 
 #define BLYNK_PRINT Serial    
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
-#define LED_PIN     5
+#define LED_PIN     3
 #define NUM_LEDS    36
 #define BRIGHTNESS  100
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define LED_PIN2     6
+#define LED_PIN2     4
 #define NUM_LEDS2    36
 #define BRIGHTNESS2  100
 #define LED_TYPE2    WS2811
