@@ -58,10 +58,17 @@ char server[]          = "blynk-cloud.com";
 unsigned int port      = 80;
 
 CRGBPalette16 currentPalette;
-double terang = 100 ;
-double terang2 = 100 ;
+double sp = 100 ;
+double sp2 = 100 ;
 double sum;
 double xsum;
+int man1 = 0;
+int man2 = 0;
+double Outx = 100;
+double Outx2 = 100;
+double Outy = 100;
+double Outy2 = 100;
+
 
 
 // Definition of Variable
@@ -89,26 +96,41 @@ void setup() {
     SetupBlackAndWhiteStripedPalette();
     timer.setInterval(13L, LED);
     timer.setInterval(500L, sensor);
-    timer.setInterval(10000L, v1);
+    timer.setInterval(8000L, v1);
     timer.setInterval(30000L, check);
     myPID.SetMode(AUTOMATIC);
     myPID2.SetMode(AUTOMATIC);
     display.init(); // Initialising the UI will init the display too.
-    display.flipScreenVertically();
-    
-    
-   
-    
+    display.flipScreenVertically();    
 }
+
+
 
 BLYNK_WRITE(V7)// set Setpoint to V7 of blynk.
 {
-  terang = param.asDouble();
+  sp = param.asDouble();
 }
 BLYNK_WRITE(V6)// set Setpoint to V7 of blynk.
 {
-  terang2 = param.asDouble();
+  sp2 = param.asDouble();
 }
+BLYNK_WRITE(V8)// set Setpoint to V7 of blynk.
+{
+  man1 = param.asInt();
+}
+BLYNK_WRITE(V9)// set Setpoint to V7 of blynk.
+{
+  man2 = param.asInt();
+}
+BLYNK_WRITE(V10)// set Setpoint to V7 of blynk.
+{
+  Outx = param.asDouble();
+}
+BLYNK_WRITE(V11)// set Setpoint to V7 of blynk.
+{
+  Outx2 = param.asDouble();
+}
+
 
 void drawlux()
 {
@@ -191,8 +213,18 @@ void LED()
     FastLED.show();
     myPID.Compute();
     myPID2.Compute();
-    sum = Output + Output2;
+    sum = Outy + Outy2;
     xsum = constrain(sum,0,255);
+    if (man1 == 1 )
+    {
+      Outy = Outx;
+      
+    }else{Outy = Output;}
+    if (man2 == 1 )
+    {
+      Outy2 = Outx2;
+      
+    }else{Outy2 = Output2;}
     
 }
 void sensor ()
@@ -208,8 +240,8 @@ void sensor ()
     display.clear();
     drawlux();
     display.display();
-    Setpoint = terang;
-    Setpoint2 = terang2;
+    Setpoint = sp;
+    Setpoint2 = sp2;
 
     
 
@@ -220,8 +252,8 @@ void v1()
 {
   Blynk.virtualWrite(4, SensorValue[0]);
   Blynk.virtualWrite(5, SensorValue[1]);
-  Blynk.virtualWrite(3, Output);
-  Blynk.virtualWrite(2, Output2);
+  Blynk.virtualWrite(3, Outy);
+  Blynk.virtualWrite(2, Outy2);
   Blynk.virtualWrite(1, xsum);
   }
 void check (){
