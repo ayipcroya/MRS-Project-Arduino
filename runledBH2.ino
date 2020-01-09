@@ -11,8 +11,6 @@
 #include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 SSD1306  display(0x3c, 5, 4); // Initialize the OLED display using Wire library
 
-
-
 #define BLYNK_PRINT Serial    
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
 #define LED_PIN     3
@@ -58,8 +56,8 @@ char server[]          = "blynk-cloud.com";
 unsigned int port      = 80;
 
 CRGBPalette16 currentPalette;
-double sp = 100 ;
-double sp2 = 100 ;
+double sp = 70 ;
+double sp2 = 50 ;
 double sum;
 double xsum;
 int man1 = 0;
@@ -68,6 +66,13 @@ double Outx = 100;
 double Outx2 = 100;
 double Outy = 100;
 double Outy2 = 100;
+double Out ;
+double Out2;
+double Outs ;
+double Outs2;
+double Outc ;
+double Outc2;
+String color = "Blue";
 
 
 
@@ -77,8 +82,8 @@ int16_t SensorValue[2];
 
 double Setpoint , Input, Output;
 double Setpoint2 , Input2, Output2;
-PID myPID(&Input, &Output, &Setpoint ,1.2,0.9,1, DIRECT);
-PID myPID2(&Input2, &Output2, &Setpoint2 ,1.2,0.9,1, DIRECT);
+PID myPID(&Input, &Output, &Setpoint ,1.2,0.9,0, DIRECT);
+PID myPID2(&Input2, &Output2, &Setpoint2 ,1.2,0.9,0, DIRECT);
 Servo servo;
 Servo servo2;
 BlynkTimer timer;
@@ -93,17 +98,19 @@ void setup() {
     FastLED.setBrightness(  BRIGHTNESS );
     FastLED.addLeds<LED_TYPE2, LED_PIN2, COLOR_ORDER>(leds2, NUM_LEDS2).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS2 );    
-    SetupBlackAndWhiteStripedPalette();
+    
     timer.setInterval(13L, LED);
     timer.setInterval(500L, sensor);
-    timer.setInterval(8000L, v1);
-    timer.setInterval(30000L, check);
+    timer.setInterval(1131L, oled);
+    timer.setInterval(8137L, v1);
+    timer.setInterval(15731L, check);
     myPID.SetMode(AUTOMATIC);
     myPID2.SetMode(AUTOMATIC);
     display.init(); // Initialising the UI will init the display too.
-    display.flipScreenVertically();    
+    display.flipScreenVertically();
+    servo.attach(14);
+    servo2.attach(12);    
 }
-
 
 
 BLYNK_WRITE(V7)// set Setpoint to V7 of blynk.
@@ -124,11 +131,11 @@ BLYNK_WRITE(V9)// set Setpoint to V7 of blynk.
 }
 BLYNK_WRITE(V10)// set Setpoint to V7 of blynk.
 {
-  Outx = param.asDouble();
+  Outs = param.asDouble();
 }
 BLYNK_WRITE(V11)// set Setpoint to V7 of blynk.
 {
-  Outx2 = param.asDouble();
+  Outs2 = param.asDouble();
 }
 
 
@@ -138,7 +145,7 @@ void drawlux()
   int y=0;
 
   int lux = SensorValue[0] ;
-  lux = map (lux,0,10000,0,100);
+  
 
   display.setFont(ArialMT_Plain_24);
   String hum = String(lux) + " PSIG";
@@ -195,10 +202,19 @@ void SetupBlackAndWhiteStripedPalette()
     // 'black out' all 16 palette entries...
     fill_solid( currentPalette, 5, CRGB::Black);
     // and set every fourth one to white.
-    currentPalette[0] = CRGB::Red;
-    currentPalette[4] = CRGB::Red;
-    currentPalette[8] = CRGB::Red;
-    currentPalette[12] = CRGB::Red;
+    if(SensorValue[0]>=100){
+      currentPalette[0] = CRGB::Red;
+      currentPalette[4] = CRGB::Red;
+      currentPalette[8] = CRGB::Red;
+      currentPalette[12] = CRGB::Red;
+    
+      }else{currentPalette[0] = CRGB::Blue; 
+           currentPalette[4] = CRGB::Blue;
+           currentPalette[8] = CRGB::Blue;
+           currentPalette[12] = CRGB::Blue;
+    
+      
+      }
     
 }
 
@@ -213,8 +229,8 @@ void LED()
     FastLED.show();
     myPID.Compute();
     myPID2.Compute();
-    sum = Outy + Outy2;
-    xsum = constrain(sum,0,255);
+    Outx = map(Outs,0,100,0,255);
+    Outx2 = map(Outs2,0,100,0,255);
     if (man1 == 1 )
     {
       Outy = Outx;
@@ -225,7 +241,9 @@ void LED()
       Outy2 = Outx2;
       
     }else{Outy2 = Output2;}
-    
+     sum = Outy + Outy2;
+    xsum = constrain(sum,0,255);
+    SetupBlackAndWhiteStripedPalette();
 }
 void sensor ()
 {
@@ -234,27 +252,31 @@ void sensor ()
     SensorValue[0] = RawData / 120;  
     init_BH1750(BH1750_2_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_2_ADDRESS);
-    SensorValue[1] = RawData / 120;
+    SensorValue[1] = abs (RawData / 24);
     Input = SensorValue[0];
     Input2 = SensorValue[1];
-    display.clear();
-    drawlux();
-    display.display();
     Setpoint = sp;
     Setpoint2 = sp2;
-
-    
-
+    Out=map(Outy,0,255,0,100);
+    Out2=map(Outy2,0,255,0,100);
+    servo.write(Outy);
+    servo2.write(Outy2);
 }
 
-
+void oled (){
+  display.clear();
+    drawlux();
+    display.display();
+  
+  }
 void v1()
 {
   Blynk.virtualWrite(4, SensorValue[0]);
   Blynk.virtualWrite(5, SensorValue[1]);
-  Blynk.virtualWrite(3, Outy);
-  Blynk.virtualWrite(2, Outy2);
-  Blynk.virtualWrite(1, xsum);
+  Blynk.virtualWrite(3, Out);
+  Blynk.virtualWrite(2, Out2);
+  Blynk.virtualWrite(1, Setpoint);
+  Blynk.virtualWrite(0, Setpoint2);
   }
 void check (){
   CheckConnection();
