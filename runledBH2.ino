@@ -9,7 +9,9 @@
 #include <PID_v1.h>
 #include <Servo.h>
 #include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
-SSD1306  display(0x3c, 5, 4); // Initialize the OLED display using Wire library
+SSD1306Wire  display(0x3c, 5, 4);
+SSD1306Wire  display2(0x3d, 5, 4);
+ // Initialize the OLED display using Wire library
 
 #define BLYNK_PRINT Serial    
 #define FASTLED_ESP8266_NODEMCU_PIN_ORDER
@@ -57,7 +59,7 @@ unsigned int port      = 80;
 
 CRGBPalette16 currentPalette;
 double sp = 70 ;
-double sp2 = 50 ;
+double sp2 = 20 ;
 double sum;
 double xsum;
 int man1 = 0;
@@ -106,8 +108,14 @@ void setup() {
     timer.setInterval(15731L, check);
     myPID.SetMode(AUTOMATIC);
     myPID2.SetMode(AUTOMATIC);
-    display.init(); // Initialising the UI will init the display too.
+    display.init();// Initialising the UI will init the display too.
+    display2.init();
+    display.setI2cAutoInit(true);
+    display2.setI2cAutoInit(true);
+
+                        
     display.flipScreenVertically();
+    display2.flipScreenVertically();
     servo.attach(14);
     servo2.attach(12);    
 }
@@ -151,6 +159,20 @@ void drawlux()
   String hum = String(lux) + " PSIG";
   display.drawString(0 + x, 15 + y, hum);
   int humWidth = display.getStringWidth(hum);
+}
+
+void drawlux2()
+{
+  int x=0;
+  int y=0;
+
+  int lux = SensorValue[1] ;
+  
+
+  display2.setFont(ArialMT_Plain_24);
+  String hum = String(lux) + " PSIG";
+  display2.drawString(0 + x, 15 + y, hum);
+  int humWidth = display2.getStringWidth(hum);
 }
 
 
@@ -252,7 +274,7 @@ void sensor ()
     SensorValue[0] = RawData / 120;  
     init_BH1750(BH1750_2_ADDRESS, CONTINUOUS_HIGH_RES_MODE);
     RawData_BH1750(BH1750_2_ADDRESS);
-    SensorValue[1] = abs (RawData / 24);
+    SensorValue[1] = abs ((RawData / 24)-17);
     Input = SensorValue[0];
     Input2 = SensorValue[1];
     Setpoint = sp;
@@ -264,11 +286,15 @@ void sensor ()
 }
 
 void oled (){
-  display.clear();
+    display.clear();
     drawlux();
     display.display();
-  
+    display2.clear();
+    drawlux2();
+    display2.display();  
   }
+
+
 void v1()
 {
   Blynk.virtualWrite(4, SensorValue[0]);
